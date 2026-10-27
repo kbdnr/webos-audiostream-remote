@@ -1,0 +1,26 @@
+{
+  "name": "audiostream-remote-webos",
+  "version": "1.0.8",
+  "private": true,
+  "description": "Stream a rooted LG webOS TV's audio to any browser and control it with a web remote",
+  "scripts": {
+    "icons": "python3 scripts/make-icons.py frontend",
+    "build": "node scripts/bump-version.js && npm run package",
+    "package": "webpack --mode production && node scripts/check-compat.js",
+    "build:dev": "webpack --mode development",
+    "native": "sh scripts/build-native.sh",
+    "watch": "webpack --mode development --watch",
+    "serve": "python3 -m http.server 8765 --bind 127.0.0.1 --directory dist",
+    "deploy": "ares-install -d ${TV:-tv} dist/*.ipk",
+    "launch": "ares-launch -d ${TV:-tv} io.github.kbdnr.audiostream",
+    "inspect": "ares-inspect -d ${TV:-tv} --app io.github.kbdnr.audiostream --open",
+    "inspect:service": "ares-inspect -d ${TV:-tv} --service io.github.kbdnr.audiostream.service --open",
+    "version": "node scripts/bump-version.js --sync && git add frontend/appinfo.json service/package.json"
+  },
+  "devDependencies": {
+    "@webosbrew/webos-packager-plugin": "2.0.4",
+    "copy-webpack-plugin": "14.0.0",
+    "webpack": "5.112.2",
+    "webpack-cli": "7.2.3"
+  }
+}
