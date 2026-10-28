@@ -1,0 +1,110 @@
+/* Sized in rem off the viewport width so it lays out the same on 1280x720 and 1920x1080 TVs (24px at 1920).
+   webOS 4 runs apps on Chromium 53: no CSS grid and no flexbox gap, so spacing is done with margins. */
+html { font-size: 1.25vw; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: system-ui, "LG Smart UI", sans-serif;
+  background: #111;
+  color: #eee;
+  height: 100vh;
+  overflow: hidden;
+  padding: 2rem 2.5rem;
+}
+
+header { display: flex; align-items: baseline; margin-bottom: 1.5rem; }
+header > * { margin-right: 1rem; }
+h1 { font-size: 1.8rem; color: #e94560; font-weight: 600; }
+h2 { font-size: 1rem; color: #888; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 1rem; }
+.version { color: #555; font-size: .9rem; }
+.preview { margin-left: auto; color: #f1c40f; font-size: .8rem; }
+[hidden] { display: none !important; }
+
+/* Everything has to fit on one screen: cards shrink and scroll inside rather than grow */
+main { display: flex; height: calc(100vh - 7rem); }
+.card { background: #1a1a2e; border-radius: .8rem; padding: 1.5rem; }
+.status { flex: 1.2; display: flex; flex-direction: column; margin-right: 1.5rem; min-width: 0; overflow: hidden; }
+.side { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.settings { flex: 0 1 auto; min-height: 0; overflow-y: auto; margin-bottom: 1.5rem; }
+.log { flex: 1 1 0; min-height: 6rem; display: flex; flex-direction: column; }
+
+/* State line */
+.state { display: flex; align-items: center; margin-bottom: 1.5rem; }
+.state .dot { margin-right: .8rem; flex: none; }
+.dot { width: 1rem; height: 1rem; border-radius: 50%; background: #555; }
+.dot.ok { background: #4ecca3; box-shadow: 0 0 .8rem #4ecca3; }
+.dot.off { background: #666; }
+.dot.err { background: #e94560; box-shadow: 0 0 .8rem #e94560; }
+.state-text { font-size: 1.4rem; font-weight: 500; }
+
+.elevate { background: #2a1a24; border: 1px solid #e94560; border-radius: .6rem; padding: 1.2rem; margin-bottom: 1.5rem; }
+.elevate p { color: #ccc; font-size: .95rem; line-height: 1.5; margin-bottom: 1rem; }
+
+/* URL */
+.url-box { background: #111; border-radius: .6rem; padding: 1.2rem 1.4rem; margin-bottom: 1.5rem; }
+.label { color: #777; font-size: .8rem; margin-bottom: .4rem; }
+.url { font-family: ui-monospace, Menlo, monospace; font-size: 1.8rem; color: #4ecca3; word-break: break-all; }
+.url-alt { font-family: ui-monospace, Menlo, monospace; font-size: .8rem; color: #555; margin-top: .4rem; }
+
+/* Details */
+.details { display: flex; flex-wrap: wrap; font-size: .95rem; margin-bottom: 1.5rem; }
+.details dt { color: #777; width: 9rem; margin-bottom: .55rem; }
+.details dd { width: calc(100% - 9rem); margin-bottom: .55rem; color: #ddd; font-family: ui-monospace, Menlo, monospace; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.details dd.ok { color: #4ecca3; }
+.details dd.err { color: #e94560; white-space: normal; word-break: break-word; }
+
+.actions { display: flex; flex-wrap: wrap; margin-top: auto; }
+.actions button { margin: 0 .8rem .8rem 0; }
+.message { min-height: 1.4rem; margin-top: .8rem; font-size: .85rem; color: #888; }
+.message.err { color: #e94560; }
+
+/* Controls */
+button, input {
+  font: inherit;
+  font-size: .95rem;
+  color: #ddd;
+  background: #2a2a3e;
+  border: 2px solid #333;
+  border-radius: .5rem;
+  padding: .6rem 1.2rem;
+  outline: none;
+  transition: transform .08s, background .08s, border-color .08s;
+}
+button:disabled { opacity: .45; }
+button.primary { background: #e94560; border-color: #e94560; color: #fff; }
+button.running { background: #4ecca3; border-color: #4ecca3; color: #111; }
+button.toggle b { color: #888; font-weight: 600; }
+button.toggle.on b { color: #4ecca3; }
+input { width: 8rem; font-family: ui-monospace, Menlo, monospace; }
+
+/* The TV has no mouse pointer by default, so focus must be unmissable */
+:focus { border-color: #fff !important; transform: scale(1.06); box-shadow: 0 0 0 .2rem rgba(255,255,255,.25); }
+
+.field { margin-bottom: 1.1rem; }
+.field label { display: block; color: #888; font-size: .8rem; margin-bottom: .45rem; }
+/* A TV can have a dozen or more devices: show two rows and scroll the rest (focus scrolls them into view) */
+.chips { display: flex; flex-wrap: wrap; max-height: 4.6rem; overflow-y: auto; padding: .2rem; margin: -.2rem; }
+.chips button { font-size: .75rem; padding: .4rem .8rem; margin: 0 .5rem .5rem 0; }
+.chips button.selected { background: #e94560; border-color: #e94560; color: #fff; }
+.chips .empty { color: #555; font-size: .8rem; }
+.row { display: flex; flex-wrap: wrap; }
+.row > * { margin-right: .8rem; }
+
+.log pre {
+  flex: 1;
+  overflow: hidden;
+  background: #111;
+  border-radius: .5rem;
+  padding: .8rem 1rem;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: .7rem;
+  line-height: 1.5;
+  color: #888;
+  white-space: pre-wrap;
+  word-break: break-all;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+/* Diagnostics output is long: read it from the top and scroll with up/down */
+.log pre.diag { display: block; overflow-y: auto; color: #bbb; }
+.log pre:focus { transform: none; box-shadow: 0 0 0 .2rem rgba(255,255,255,.25); }

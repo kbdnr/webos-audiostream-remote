@@ -1,0 +1,12 @@
+{
+  "id": "io.github.kbdnr.audiostream",
+  "version": "1.0.8",
+  "vendor": "kbdnr",
+  "type": "web",
+  "main": "index.html",
+  "title": "Audio Stream Remote",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": true
+}

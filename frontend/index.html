@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Audio Stream Remote</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Audio Stream Remote</h1>
+  <span class="version" id="version"></span>
+  <span class="preview" id="preview" hidden>Preview mode (not on a TV)</span>
+</header>
+
+<main>
+  <section class="card status">
+    <div class="state">
+      <span class="dot" id="dot"></span>
+      <span class="state-text" id="stateText">Checking service&hellip;</span>
+    </div>
+
+    <div class="elevate" id="elevateBox" hidden>
+      <p>The service needs root to capture audio and send key presses.
+         Homebrew Channel can grant it.</p>
+      <div class="row">
+        <button id="elevateBtn">Grant root access</button>
+        <button id="diagBtn" hidden>Run diagnostics</button>
+      </div>
+    </div>
+
+    <div class="url-box" id="urlBox" hidden>
+      <div class="label">Open on your phone or computer</div>
+      <div class="url" id="url"></div>
+      <div class="url-alt" id="urlAlt"></div>
+    </div>
+
+    <dl class="details" id="details"></dl>
+
+    <div class="actions" id="actions" hidden>
+      <button id="toggleBtn">Start</button>
+      <button id="restartBtn">Restart</button>
+      <button id="autostartBtn" class="toggle">Start on boot: <b>Off</b></button>
+    </div>
+    <div class="message" id="message"></div>
+  </section>
+
+  <div class="side">
+    <section class="card settings" id="settings" hidden>
+      <h2>Settings</h2>
+      <div class="field">
+        <label for="port">Port</label>
+        <input id="port" type="number" min="1" max="65535">
+      </div>
+      <div class="field">
+        <label>Audio capture device</label>
+        <div class="chips" id="audioChips"></div>
+      </div>
+      <div class="field">
+        <label>Remote input device</label>
+        <div class="chips" id="inputChips"></div>
+      </div>
+      <div class="row">
+        <button id="saveBtn">Save &amp; restart</button>
+        <button id="resetBtn">Reset to defaults</button>
+      </div>
+    </section>
+
+    <section class="card log">
+      <h2 id="logTitle">Log</h2>
+      <pre id="log" tabindex="-1">No log yet.</pre>
+    </section>
+  </div>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

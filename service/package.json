@@ -1,0 +1,6 @@
+{
+  "name": "io.github.kbdnr.audiostream.service",
+  "version": "1.0.8",
+  "description": "Manages the TV audio stream + web remote server",
+  "main": "service.js"
+}

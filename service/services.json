@@ -1,0 +1,10 @@
+{
+  "id": "io.github.kbdnr.audiostream.service",
+  "description": "Audio Stream Remote service",
+  "services": [
+    {
+      "name": "io.github.kbdnr.audiostream.service",
+      "description": "Audio Stream Remote service"
+    }
+  ]
+}

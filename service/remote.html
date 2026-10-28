@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TV Sampler</title>
+<style>
+:root{--bg:#111;--card:#1a1a2e;--card2:#22223a;--line:#2e2e48;--text:#eee;--dim:#8a8aa0;--faint:#55556a;
+  --accent:#e94560;--accent-d:#c73650;--ok:#4ecca3;--warn:#f1c40f}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:1.5rem 1rem 3rem}
+.wrap{max-width:760px;margin:0 auto}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:disabled{opacity:.4;cursor:default}
+header{display:flex;align-items:center;gap:.8rem;margin-bottom:1rem}
+h1{font-size:1.25rem;color:var(--accent);font-weight:650;letter-spacing:.01em}
+.conn{display:flex;align-items:center;gap:.45rem;font-size:.8rem;color:var(--dim);margin-left:auto}
+.conn i{width:.55rem;height:.55rem;border-radius:50%;background:var(--faint)}
+.conn.live i{background:var(--ok);box-shadow:0 0 .5rem var(--ok)}
+.conn.err i{background:var(--accent)}
+.card{background:var(--card);border-radius:12px;padding:1.2rem}
+
+/* Deck: record button, timer, meters, quick grabs */
+.deck{display:grid;grid-template-columns:auto 1fr;gap:1.2rem 1.4rem;align-items:center}
+.rec{width:96px;height:96px;border-radius:50%;border:3px solid var(--line);display:grid;place-items:center;background:var(--card2);transition:border-color .15s}
+.rec:hover:not(:disabled){border-color:var(--accent)}
+.rec span{width:40px;height:40px;border-radius:50%;background:var(--accent);transition:all .15s}
+.rec.on{border-color:var(--accent);animation:pulse 1.4s infinite}
+.rec.on span{border-radius:6px;width:32px;height:32px}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(233,69,96,.45)}50%{box-shadow:0 0 0 12px rgba(233,69,96,0)}}
+.readout{min-width:0}
+.time{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.time.on{color:var(--accent)}
+.sub{font-size:.8rem;color:var(--dim);margin-top:.15rem;min-height:1.1em}
+.meters{margin-top:.7rem;display:grid;gap:4px}
+.meter{height:6px;background:#0c0c16;border-radius:3px;overflow:hidden;position:relative}
+.meter b{position:absolute;inset:0;clip-path:inset(0 100% 0 0);background:linear-gradient(90deg,var(--ok) 0 75%,var(--warn) 90%,var(--accent))}
+.meter.clip{outline:1px solid var(--accent)}
+.row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.chip{background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:.5rem .8rem;font-size:.85rem}
+.chip:hover:not(:disabled){border-color:var(--dim)}
+.chip.on{background:var(--ok);border-color:var(--ok);color:#111}
+.chip kbd{font:inherit;font-size:.7rem;color:var(--faint);margin-left:.35rem}
+.chip.on kbd{color:#114}
+.grow{flex:1}
+.label{font-size:.75rem;color:var(--faint);margin-right:.2rem}
+.error{grid-column:1/-1;background:#2a1420;border:1px solid var(--accent);border-radius:8px;padding:.7rem .9rem;font-size:.85rem;line-height:1.45;color:#f4c0ca}
+.error code{font-family:ui-monospace,Menlo,monospace;font-size:.8rem;color:#fff}
+
+/* Clips */
+h2{font-size:.75rem;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.09em;margin:1.6rem 0 .6rem;display:flex;align-items:baseline;gap:.6rem}
+h2 small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint)}
+.clips{display:grid;gap:.6rem}
+.clip{background:var(--card);border-radius:10px;padding:.7rem .8rem;display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:center}
+.body{min-width:0}
+.top{display:flex;align-items:baseline;gap:.6rem}
+.play{width:38px;height:38px;border-radius:50%;background:var(--card2);border:1px solid var(--line);display:grid;place-items:center}
+.play:hover{border-color:var(--ok)}
+.play svg{width:14px;height:14px;fill:var(--text)}
+.name{background:none;border:1px solid transparent;border-radius:5px;color:var(--text);font:inherit;font-size:.9rem;padding:.15rem .3rem;margin-left:-.3rem;min-width:0;width:100%}
+.name:hover{border-color:var(--line)}.name:focus{outline:none;border-color:var(--dim);background:#0c0c16}
+.meta{font-size:.75rem;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+.actions{display:flex;gap:.35rem}
+.act{font-size:.8rem;padding:.4rem .65rem;border-radius:6px;background:var(--card2);border:1px solid var(--line)}
+.act.save{background:var(--accent);border-color:var(--accent);color:#fff}
+.act.save:hover{background:var(--accent-d)}
+.act.del:hover{border-color:var(--accent);color:var(--accent)}
+.wave{width:100%;height:36px;display:block;cursor:pointer;margin-top:.2rem}
+.empty{color:var(--faint);font-size:.85rem;padding:1.2rem;text-align:center;border:1px dashed var(--line);border-radius:10px}
+.foot{margin-top:1.6rem;font-size:.75rem;color:var(--faint);line-height:1.6}
+.foot code{font-family:ui-monospace,Menlo,monospace;color:var(--dim);user-select:all}
+
+/* Audio source picker */
+.sources{margin-top:.7rem;display:grid;gap:.5rem}
+.srclist{display:grid;gap:.5rem}
+.src{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:.8rem;align-items:center;background:var(--card);border:1px solid transparent;border-radius:10px;padding:.6rem .8rem}
+.src.cur{border-color:var(--ok)}
+.src .use{min-width:4.6rem}
+.sid{font-family:ui-monospace,Menlo,monospace;font-size:.82rem;overflow-wrap:anywhere}
+.sdesc{font-size:.72rem;color:var(--faint);margin-top:.1rem}
+.sdesc .live{color:var(--ok)}
+.lvl{display:grid;gap:4px;font-size:.72rem;color:var(--dim);font-variant-numeric:tabular-nums;min-width:0}
+.lvl span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvl.sig span{color:var(--ok)}
+.lvl.err span{color:var(--accent)}
+summary small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint);margin-left:.5rem;font-family:ui-monospace,Menlo,monospace}
+
+/* Remote, folded away */
+details{margin-top:1.6rem}
+summary{cursor:pointer;font-size:.75rem;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.09em;list-style:none}
+summary::before{content:'\25B8';display:inline-block;margin-right:.5rem;transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg)}
+.remote{margin-top:.7rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.8rem}
+.pad{background:var(--card);border-radius:10px;padding:.8rem;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:start}
+.k{background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:.55rem 0;font-size:.75rem;user-select:none;-webkit-user-select:none}
+.k:active{background:#3a3a55;transform:scale(.96)}
+.k.power{background:#c0392b;border-color:#c0392b;color:#fff}
+.k.okk{background:var(--ok);border-color:var(--ok);color:#111}
+.k.red{color:#e74c3c}.k.green{color:#2ecc71}.k.yellow{color:#f1c40f}.k.blue{color:#3498db}
+.gap{visibility:hidden}
+
+@media (max-width:520px){
+  .deck{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .readout{width:100%}
+  .clip{grid-template-columns:auto 1fr}
+  .actions{grid-column:1/-1;justify-content:flex-end}
+  .src{grid-template-columns:minmax(0,1fr) auto}
+  .src .lvl{grid-column:1/-1;grid-row:2}
+  .src .actions{grid-column:2;grid-row:1}
+}
+</style></head>
+<body><div class="wrap">
+
+<header>
+  <h1>TV Sampler</h1>
+  <div class="conn" id="conn"><i></i><span id="connText">Not connected</span></div>
+</header>
+
+<section class="card deck">
+  <button class="rec" id="recBtn" title="Record (Space)"><span></span></button>
+  <div class="readout">
+    <div class="time" id="time">0:00.0</div>
+    <div class="sub" id="sub">Press record or Space to start. Audio is captured on the TV and saved here as WAV.</div>
+    <div class="meters"><div class="meter" id="mL"><b></b></div><div class="meter" id="mR"><b></b></div></div>
+  </div>
+  <div class="row">
+    <span class="label">Save the last</span>
+    <button class="chip grab" data-s="10" disabled>10s<kbd>1</kbd></button>
+    <button class="chip grab" data-s="30" disabled>30s<kbd>2</kbd></button>
+    <button class="chip grab" data-s="60" disabled>60s<kbd>3</kbd></button>
+    <span class="grow"></span>
+    <button class="chip" id="monBtn" title="Hear the TV through this computer (M)">Monitor<kbd>M</kbd></button>
+    <button class="chip" id="armBtn" title="Keep the TV audio stream open so the last 60s can be saved">Arm</button>
+  </div>
+  <div class="error" id="err" hidden></div>
+</section>
+
+<details id="srcBox">
+  <summary>Audio source <small id="srcCur"></small></summary>
+  <div class="sources">
+    <div class="row">
+      <button class="chip" id="scanBtn">Scan all</button>
+      <span class="label" id="scanNote">Play something on the TV, then scan: each source is test-recorded for 1.5s and its level shown here.</span>
+    </div>
+    <div class="srclist" id="srcList"></div>
+  </div>
+</details>
+
+<h2>Clips <small id="clipInfo"></small></h2>
+<div class="clips" id="clips"><div class="empty">No clips yet.</div></div>
+
+<details>
+  <summary>TV remote</summary>
+  <div class="remote">
+    <div class="pad">
+      <button class="k power" data-k="power">POWER</button><button class="k" data-k="info">INFO</button><button class="k" data-k="menu">SETTINGS</button>
+      <button class="k" data-k="home">HOME</button><button class="k" data-k="up">&#9650;</button><button class="k" data-k="back">BACK</button>
+      <button class="k" data-k="left">&#9664;</button><button class="k okk" data-k="ok">OK</button><button class="k" data-k="right">&#9654;</button>
+      <button class="k" data-k="exit">EXIT</button><button class="k" data-k="down">&#9660;</button><button class="k" data-k="subtitle">SUBT</button>
+      <button class="k" data-k="vol_up">VOL +</button><button class="k" data-k="mute">MUTE</button><button class="k" data-k="ch_up">CH +</button>
+      <button class="k" data-k="vol_down">VOL &minus;</button><span class="gap"></span><button class="k" data-k="ch_down">CH &minus;</button>
+    </div>
+    <div class="pad">
+      <button class="k" data-k="1">1</button><button class="k" data-k="2">2</button><button class="k" data-k="3">3</button>
+      <button class="k" data-k="4">4</button><button class="k" data-k="5">5</button><button class="k" data-k="6">6</button>
+      <button class="k" data-k="7">7</button><button class="k" data-k="8">8</button><button class="k" data-k="9">9</button>
+      <button class="k" data-k="rw">&#9194;</button><button class="k" data-k="0">0</button><button class="k" data-k="ff">&#9193;</button>
+      <button class="k" data-k="play">&#9654;</button><button class="k" data-k="pause">&#9208;</button><button class="k" data-k="stop">&#9209;</button>
+      <button class="k red" data-k="red">RED</button><button class="k green" data-k="green">GREEN</button><button class="k yellow" data-k="yellow">YELLOW</button>
+      <span class="gap"></span><button class="k blue" data-k="blue">BLUE</button><span class="gap"></span>
+    </div>
+  </div>
+</details>
+
+<p class="foot">
+  Clips stay in this browser until you delete them. 16-bit stereo, 48 kHz (about 11 MB a minute).<br>
+  From a terminal: <code id="curl"></code>
+</p>
+</div>
+
+<script>
+// Filled in by tv-stream.js
+const SR = __SAMPLE_RATE__, CH = __CHANNELS__;
+const FRAME = CH * 2, BPS = SR * FRAME;  // bytes per frame / per second
+const RING_SECONDS = 60;
+
+const $ = (id) => document.getElementById(id);
+const fmtTime = (s) => Math.floor(s / 60) + ':' + (s % 60).toFixed(1).padStart(4, '0');
+const fmtSize = (b) => b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : Math.round(b / 1e3) + ' KB';
+const stamp = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
+  String(d.getDate()).padStart(2, '0') + ' ' + d.toTimeString().slice(0, 8).replace(/:/g, '.');
+
+$('curl').textContent = "curl -o clip.wav 'http://" + location.host + "/record.wav?seconds=30'";
+
+// ---------- Stream ----------
+// The TV sends raw S16LE PCM. Everything is kept frame-aligned: network chunks can split a frame.
+
+let reader = null, abort = null, armed = false, gotData = false, carry = null;
+const ring = new Uint8Array(BPS * RING_SECONDS);
+let ringPos = 0, ringFilled = 0;
+let rec = null;               // { chunks, bytes, started }
+let wantArmed = false;        // user asked to stay armed (vs. armed only for a recording)
+
+async function connect() {
+  if (armed) return true;
+  setConn('', 'Connecting…');
+  hideError();
+  abort = new AbortController();
+  try {
+    const res = await fetch('/audio', { signal: abort.signal, cache: 'no-store' });
+    if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
+    reader = res.body.getReader();
+  } catch (e) {
+    if (e.name !== 'AbortError') { setConn('err', 'Not connected'); showError('Could not reach the TV: ' + e.message); }
+    return false;
+  }
+  armed = true; gotData = false; carry = null; ringPos = ringFilled = 0;
+  setConn('live', 'Listening');
+  updateButtons();
+  pump();
+  return true;
+}
+
+async function pump() {
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      onData(value);
+    }
+  } catch (e) { /* aborted */ }
+  const intentional = !armed;
+  disconnect();
+  if (!intentional) explainStreamEnd();
+}
+
+function disconnect() {
+  armed = false;
+  if (abort) { abort.abort(); abort = null; }
+  reader = null;
+  if (rec) stopRecording();
+  setConn('', 'Not connected');
+  meters(0, 0);
+  updateButtons();
+}
+
+async function explainStreamEnd() {
+  let msg = gotData ? 'The TV stopped sending audio.' : 'The TV closed the audio stream before sending anything.';
+  try {
+    const s = await (await fetch('/status', { cache: 'no-store' })).json();
+    if (s.captureError) {
+      msg = 'Capture failed on the TV: <code>' + esc(s.captureError) + '</code><br>' +
+        'The capture device <code>' + esc(s.config.audioDevice) + '</code> probably doesn\'t work on this TV. ' +
+        'Scan for one that does under <b>Audio source</b> below.';
+      $('srcBox').open = true;
+    }
+  } catch (e) {}
+  setConn('err', 'Stopped');
+  showError(msg);
+}
+
+function onData(chunk) {
+  let bytes = chunk;
+  if (carry) { bytes = new Uint8Array(carry.length + chunk.length); bytes.set(carry); bytes.set(chunk, carry.length); carry = null; }
+  const usable = bytes.length - (bytes.length % FRAME);
+  if (usable < bytes.length) carry = bytes.slice(usable);
+  if (!usable) return;
+  const data = bytes.slice(0, usable);  // own copy: kept by the ring and recordings
+  gotData = true;
+
+  // Ring buffer for "save the last N seconds"
+  let off = 0;
+  while (off < data.length) {
+    const n = Math.min(data.length - off, ring.length - ringPos);
+    ring.set(data.subarray(off, off + n), ringPos);
+    ringPos = (ringPos + n) % ring.length; off += n;
+  }
+  ringFilled = Math.min(ring.length, ringFilled + data.length);
+
+  if (rec) { rec.chunks.push(data); rec.bytes += data.length; }
+
+  const pcm = new Int16Array(data.buffer);
+  let pl = 0, pr = 0;
+  for (let i = 0; i < pcm.length; i += CH * 4) {
+    const l = Math.abs(pcm[i]), r = Math.abs(pcm[i + 1] ?? pcm[i]);
+    if (l > pl) pl = l; if (r > pr) pr = r;
+  }
+  peakL = Math.max(peakL, pl / 32768); peakR = Math.max(peakR, pr / 32768);
+  if (monitorCtx) monitorPlay(pcm);
+}
+
+function lastSeconds(sec) {
+  const n = Math.min(ringFilled, Math.floor(sec * SR) * FRAME);
+  const out = new Uint8Array(n);
+  const start = (ringPos - n + ring.length) % ring.length;
+  const first = Math.min(n, ring.length - start);
+  out.set(ring.subarray(start, start + first));
+  out.set(ring.subarray(0, n - first), first);
+  return out;
+}
+
+// ---------- Meters ----------
+let peakL = 0, peakR = 0, shownL = 0, shownR = 0;
+// Peaks are drawn on a dB scale, -60 dB to 0 dB, so normal programme levels sit mid-bar
+const toBar = (p) => p > 0 ? Math.max(0, 1 + 20 * Math.log10(p) / 60) : 0;
+function meters(l, r) {
+  shownL = l; shownR = r;
+  $('mL').firstChild.style.clipPath = 'inset(0 ' + (100 - toBar(l) * 100) + '% 0 0)';
+  $('mR').firstChild.style.clipPath = 'inset(0 ' + (100 - toBar(r) * 100) + '% 0 0)';
+  $('mL').classList.toggle('clip', l > .99);
+  $('mR').classList.toggle('clip', r > .99);
+}
+(function tick() {
+  meters(Math.max(peakL, shownL * .9), Math.max(peakR, shownR * .9));
+  peakL = peakR = 0;
+  if (rec) {
+    const s = rec.bytes / BPS;
+    $('time').textContent = fmtTime(s);
+    $('sub').textContent = 'Recording · ' + fmtSize(rec.bytes + 44);
+  }
+  requestAnimationFrame(tick);
+})();
+
+// ---------- Recording ----------
+async function startRecording() {
+  // The stream can fail before connect() even returns; armed is false then
+  if (!(await connect()) || !armed) return;
+  rec = { chunks: [], bytes: 0, started: new Date() };
+  $('recBtn').classList.add('on');
+  $('time').classList.add('on');
+  updateButtons();
+}
+
+function stopRecording() {
+  const r = rec;
+  rec = null;
+  $('recBtn').classList.remove('on');
+  $('time').classList.remove('on');
+  if (r && r.bytes) {
+    const pcm = new Uint8Array(r.bytes);
+    let off = 0;
+    for (const c of r.chunks) { pcm.set(c, off); off += c.length; }
+    addClip(pcm, stamp(r.started));
+    note('Saved ' + fmtTime(r.bytes / BPS) + ' clip.');
+  } else {
+    $('time').textContent = fmtTime(0);
+    note('Nothing was recorded.');
+  }
+  if (!wantArmed && !monitorCtx && armed) disconnect();
+  updateButtons();
+}
+
+$('recBtn').onclick = () => rec ? stopRecording() : startRecording();
+
+document.querySelectorAll('.grab').forEach((b) => {
+  b.onclick = () => {
+    const pcm = lastSeconds(+b.dataset.s);
+    if (!pcm.length) return;
+    addClip(pcm, stamp() + ' (last ' + b.dataset.s + 's)');
+    note('Saved the last ' + fmtTime(pcm.length / BPS) + '.');
+  };
+});
+
+$('armBtn').onclick = async () => {
+  if (wantArmed) { wantArmed = false; if (!rec) disconnect(); updateButtons(); return; }
+  wantArmed = true;
+  updateButtons();
+  if (!(await connect())) { wantArmed = false; updateButtons(); }
+};
+
+function updateButtons() {
+  const have = ringFilled / BPS;
+  document.querySelectorAll('.grab').forEach((b) => { b.disabled = !have; });
+  $('armBtn').classList.toggle('on', wantArmed);
+  $('armBtn').textContent = wantArmed ? 'Armed' : 'Arm';
+  $('monBtn').classList.toggle('on', !!monitorCtx);
+}
+setInterval(() => {
+  updateButtons();
+  if (armed && !rec && Date.now() > noteUntil) {
+    const have = Math.min(ringFilled / BPS, RING_SECONDS);
+    $('sub').textContent = have < RING_SECONDS ? 'Buffering · ' + Math.floor(have) + 's of the last 60s available'
+                                               : 'Armed · the last 60s can be saved';
+  }
+}, 500);
+
+// ---------- Monitor (hear it here) ----------
+let monitorCtx = null, nextT = 0;
+$('monBtn').onclick = async () => {
+  if (monitorCtx) { monitorCtx.close(); monitorCtx = null; updateButtons(); if (!wantArmed && !rec && armed) disconnect(); return; }
+  monitorCtx = new AudioContext({ sampleRate: SR });
+  nextT = 0;
+  updateButtons();
+  if (!(await connect())) { monitorCtx.close(); monitorCtx = null; updateButtons(); }
+};
+
+function monitorPlay(pcm) {
+  const frames = pcm.length / CH;
+  const buf = monitorCtx.createBuffer(CH, frames, SR);
+  for (let c = 0; c < CH; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < frames; i++) d[i] = pcm[i * CH + c] / 32768;
+  }
+  const now = monitorCtx.currentTime;
+  if (nextT < now || nextT > now + 1) nextT = now + 0.05;  // resync after a stall or drift
+  const src = monitorCtx.createBufferSource();
+  src.buffer = buf; src.connect(monitorCtx.destination); src.start(nextT);
+  nextT += buf.duration;
+}
+
+// ---------- Audio source ----------
+// The TV test-records each source on request (/probe) so the one carrying sound is easy to spot.
+let sources = [], currentSource = null, scanning = false;
+
+async function getJson(url, opts) {
+  const res = await fetch(url, Object.assign({ cache: 'no-store' }, opts));
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || 'HTTP ' + res.status);
+  return body;
+}
+
+async function loadSources() {
+  const d = await getJson('/devices');
+  const old = new Map(sources.map((s) => [s.id, s]));
+  sources = d.audio.map((s) => Object.assign(s, { result: old.has(s.id) ? old.get(s.id).result : null }));
+  currentSource = d.current;
+  if (!sources.some((s) => s.id === currentSource)) sources.unshift({ id: currentSource, name: 'current setting', result: null });
+  $('scanNote').textContent = d.pulseError ? 'PulseAudio sources unavailable: ' + d.pulseError : $('scanNote').textContent;
+  renderSources();
+}
+
+const dB = (p) => p > 0 ? Math.round(20 * Math.log10(p)) + ' dB' : '-∞ dB';
+
+function renderSources() {
+  $('srcCur').textContent = currentSource || '';
+  const list = $('srcList');
+  list.innerHTML = '';
+  if (!sources.length) { list.innerHTML = '<div class="empty">No capture sources found.</div>'; return; }
+  for (const s of sources) {
+    const r = s.result;
+    const el = document.createElement('div');
+    el.className = 'src' + (s.id === currentSource ? ' cur' : '');
+    el.innerHTML = '<div><div class="sid"></div><div class="sdesc"></div></div>' +
+      '<div class="lvl"><div class="meter"><b></b></div><span></span></div>' +
+      '<div class="actions"><button class="act test">Test</button><button class="act use"></button></div>';
+    el.querySelector('.sid').textContent = s.id;
+    el.querySelector('.sdesc').innerHTML = esc(s.name) +
+      (s.state ? ' · <span class="' + (s.state === 'running' ? 'live' : '') + '">' +
+        (s.state === 'running' ? 'playing' : esc(s.state)) + '</span>' : '');
+    const lvl = el.querySelector('.lvl'), txt = lvl.querySelector('span');
+    if (s.testing) txt.textContent = 'Testing…';
+    else if (!r) txt.textContent = 'Not tested';
+    else if (r.error) { lvl.classList.add('err'); txt.textContent = r.error; txt.title = r.error; }
+    else {
+      lvl.querySelector('b').style.clipPath = 'inset(0 ' + (100 - toBar(r.peak) * 100) + '% 0 0)';
+      // Below -60 dB is noise floor or digital silence, not programme audio
+      if (r.peak > 0.001) lvl.classList.add('sig');
+      txt.textContent = r.peak ? 'peak ' + dB(r.peak) + ' · avg ' + dB(r.rms) : 'silent (all zeros)';
+    }
+    const test = el.querySelector('.test'), use = el.querySelector('.use');
+    test.disabled = scanning || s.testing;
+    test.onclick = () => testSource(s);
+    use.textContent = s.id === currentSource ? 'In use' : 'Use';
+    use.disabled = s.id === currentSource;
+    if (!use.disabled) use.classList.add('save');
+    use.onclick = () => useSource(s.id);
+    list.appendChild(el);
+  }
+}
+
+async function testSource(s) {
+  s.testing = true; renderSources();
+  try { s.result = await getJson('/probe?seconds=1.5&device=' + encodeURIComponent(s.id)); }
+  catch (e) { s.result = { error: e.message }; }
+  s.testing = false; renderSources();
+}
+
+$('scanBtn').onclick = async () => {
+  if (scanning) return;
+  scanning = true; $('scanBtn').disabled = true;
+  try {
+    await loadSources();
+    for (const s of sources) await testSource(s);
+  } catch (e) { $('scanNote').textContent = 'Could not list sources: ' + e.message; }
+  scanning = false; $('scanBtn').disabled = false;
+  renderSources();
+};
+
+async function useSource(id) {
+  try {
+    await getJson('/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audioDevice: id }) });
+  } catch (e) { note('Could not change source: ' + e.message); return; }
+  currentSource = id;
+  hideError();
+  renderSources();
+  note(armed ? 'Now capturing from ' + id + '.' : 'Audio source set to ' + id + '.');
+}
+
+loadSources().catch(() => {});
+
+// ---------- Clips (kept in IndexedDB) ----------
+let clips = [];
+let db = null;
+
+function openDb() {
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open('tv-sampler', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('clips', { keyPath: 'id' });
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    } catch (e) { resolve(null); }
+  });
+}
+function dbDo(mode, fn) {
+  if (!db) return Promise.resolve();
+  return new Promise((resolve) => {
+    const tx = db.transaction('clips', mode);
+    const r = fn(tx.objectStore('clips'));
+    tx.oncomplete = () => resolve(r && r.result);
+    tx.onerror = () => resolve();
+  });
+}
+
+function addClip(pcm, name) {
+  const clip = { id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), name, created: Date.now(), pcm: pcm.buffer };
+  clips.unshift(clip);
+  dbDo('readwrite', (s) => s.put(clip));
+  renderClips();
+}
+
+function wavBlob(pcmBuffer) {
+  const h = new DataView(new ArrayBuffer(44));
+  const str = (o, s) => { for (let i = 0; i < 4; i++) h.setUint8(o + i, s.charCodeAt(i)); };
+  const n = pcmBuffer.byteLength;
+  str(0, 'RIFF'); h.setUint32(4, 36 + n, true); str(8, 'WAVE'); str(12, 'fmt ');
+  h.setUint32(16, 16, true); h.setUint16(20, 1, true); h.setUint16(22, CH, true);
+  h.setUint32(24, SR, true); h.setUint32(28, BPS, true); h.setUint16(32, FRAME, true); h.setUint16(34, 16, true);
+  str(36, 'data'); h.setUint32(40, n, true);
+  return new Blob([h.buffer, pcmBuffer], { type: 'audio/wav' });
+}
+
+function download(clip) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(wavBlob(clip.pcm));
+  a.download = clip.name.replace(/[\\/:*?"<>|]+/g, '-') + '.wav';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+
+const PLAY = '<svg viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z"/></svg>';
+const STOP = '<svg viewBox="0 0 14 14"><rect x="2.5" y="2.5" width="9" height="9" rx="1"/></svg>';
+
+function renderClips() {
+  const list = $('clips');
+  list.innerHTML = '';
+  if (!clips.length) { list.innerHTML = '<div class="empty">No clips yet.</div>'; $('clipInfo').textContent = ''; return; }
+  const total = clips.reduce((t, c) => t + c.pcm.byteLength, 0);
+  $('clipInfo').textContent = clips.length + ' · ' + fmtSize(total) + (db ? '' : ' · not saved: this browser blocks storage');
+  for (const clip of clips) {
+    const el = document.createElement('div');
+    el.className = 'clip';
+    el.innerHTML = '<button class="play" title="Play">' + PLAY + '</button>' +
+      '<div class="body"><div class="top"><input class="name" spellcheck="false" title="Rename"><span class="meta"></span></div>' +
+      '<canvas class="wave" title="Click to play from here"></canvas></div>' +
+      '<div class="actions"><button class="act save" title="Download WAV">WAV</button><button class="act del" title="Delete">&#10005;</button></div>';
+    const name = el.querySelector('.name');
+    name.value = clip.name;
+    name.onchange = () => { clip.name = name.value.trim() || clip.name; name.value = clip.name; dbDo('readwrite', (s) => s.put(clip)); };
+    name.onkeydown = (e) => { if (e.key === 'Enter') name.blur(); };
+    el.querySelector('.meta').textContent = fmtTime(clip.pcm.byteLength / BPS) + ' · ' + fmtSize(clip.pcm.byteLength + 44);
+    el.querySelector('.save').onclick = () => download(clip);
+    el.querySelector('.del').onclick = () => {
+      if (player.clip === clip) stopPlayback();
+      clips = clips.filter((c) => c !== clip);
+      dbDo('readwrite', (s) => s.delete(clip.id));
+      renderClips();
+    };
+    const canvas = el.querySelector('.wave');
+    el.querySelector('.play').onclick = () => player.clip === clip ? stopPlayback() : play(clip, el, 0);
+    canvas.onclick = (e) => play(clip, el, (e.offsetX / canvas.clientWidth));
+    list.appendChild(el);
+    drawWave(canvas, clip, -1);
+  }
+}
+
+function drawWave(canvas, clip, progress) {
+  const w = canvas.clientWidth * devicePixelRatio, hgt = canvas.clientHeight * devicePixelRatio;
+  if (!w) return;
+  if (canvas.width !== w) { canvas.width = w; canvas.height = hgt; }
+  if (!clip.peaks || clip.peaks.length !== w) {
+    // min/max per pixel column, mixed to mono
+    const pcm = new Int16Array(clip.pcm), frames = pcm.length / CH, per = Math.max(1, Math.floor(frames / w));
+    clip.peaks = new Float32Array(w);
+    for (let x = 0; x < w; x++) {
+      let p = 0;
+      const end = Math.min(frames, (x + 1) * per);
+      for (let f = x * per; f < end; f += 4) { const v = Math.abs(pcm[f * CH]); if (v > p) p = v; }
+      clip.peaks[x] = p / 32768;
+    }
+  }
+  const g = canvas.getContext('2d');
+  g.clearRect(0, 0, w, hgt);
+  const split = progress < 0 ? -1 : Math.floor(progress * w);
+  for (let x = 0; x < w; x++) {
+    const v = Math.max(1, clip.peaks[x] * hgt);
+    g.fillStyle = x <= split ? '#4ecca3' : '#4a4a68';
+    g.fillRect(x, (hgt - v) / 2, 1, v);
+  }
+}
+
+// One shared player; the waveform fills in as it plays
+const player = { audio: new Audio(), clip: null, el: null, url: null };
+function play(clip, el, at) {
+  stopPlayback();
+  player.clip = clip; player.el = el;
+  player.url = URL.createObjectURL(wavBlob(clip.pcm));
+  player.audio.src = player.url;
+  player.audio.onloadedmetadata = () => { player.audio.currentTime = at * player.audio.duration; };
+  player.audio.onended = stopPlayback;
+  player.audio.play();
+  el.querySelector('.play').innerHTML = STOP;
+  (function frame() {
+    if (player.clip !== clip) return;
+    const d = player.audio.duration;
+    drawWave(el.querySelector('.wave'), clip, d ? player.audio.currentTime / d : 0);
+    requestAnimationFrame(frame);
+  })();
+}
+function stopPlayback() {
+  if (!player.clip) return;
+  player.audio.pause();
+  const el = player.el, clip = player.clip;
+  player.clip = player.el = null;
+  URL.revokeObjectURL(player.url);
+  if (el.isConnected) { el.querySelector('.play').innerHTML = PLAY; drawWave(el.querySelector('.wave'), clip, -1); }
+}
+window.addEventListener('resize', () => renderClips());
+
+// ---------- Keyboard ----------
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.code === 'Space' || e.key === 'r') { e.preventDefault(); $('recBtn').click(); }
+  else if (e.key === 'm') $('monBtn').click();
+  else if (e.key === '1' || e.key === '2' || e.key === '3') {
+    const b = document.querySelectorAll('.grab')[+e.key - 1];
+    if (!b.disabled) b.click();
+  }
+});
+
+// ---------- Remote ----------
+document.querySelectorAll('.k').forEach((b) => { b.onclick = () => fetch('/key/' + b.dataset.k, { method: 'POST' }); });
+
+// ---------- Helpers ----------
+let noteUntil = 0;
+function note(text) { $('sub').textContent = text; noteUntil = Date.now() + 2500; }
+function setConn(cls, text) { $('conn').className = 'conn ' + cls; $('connText').textContent = text; }
+function showError(html) { $('err').innerHTML = html; $('err').hidden = false; }
+function hideError() { $('err').hidden = true; }
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
+
+openDb().then((d) => {
+  db = d;
+  return dbDo('readonly', (s) => s.getAll());
+}).then((saved) => {
+  clips = (saved || []).sort((a, b) => b.created - a.created);
+  renderClips();
+});
+</script>
+</body></html>
